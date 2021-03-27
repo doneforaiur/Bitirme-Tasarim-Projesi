@@ -25,7 +25,7 @@ int main(int argc, const char* argv[]) {
 	string dosya_yolu;
 
 	int const default_argc = 5;
-	const char* default_args[] = { "0.5", "1.5", "3", "50", "face.mp4" };
+	const char* default_args[] = { "0.5", "1.5", "5", "50", "face.mp4" };
 	if (argc == 1) {
 
 		argc = default_argc;
@@ -47,20 +47,14 @@ int main(int argc, const char* argv[]) {
 		dosya_yolu = argv[5];
 	}
 
-	cout.precision(8);
-	auto [low_a, low_b] = butter(0.5, 30.0);
-	cout << low_a[0] << " " << low_a[1] << "\n";
-	cout << low_b[0] << " " << low_b[1] << "\n";
-	auto [high_a, high_b] = butter(1.5, 30.0);
-	cout << high_a[0] << " " << high_a[1] << "\n";
-	cout << high_b[0] << " " << high_b[1] << "\n";
-
 
 	cv::VideoCapture cap("test4.mp4");
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
-	const int level = seviye;
+	auto [low_a, low_b] = butter(0.5, fs);
+	auto [high_a, high_b] = butter(1.5, fs);
 
+	const int level = seviye;
 
 	vector<Mat>* data = new vector<Mat>;
 	vector<vector<Mat>> pyramid;
@@ -72,10 +66,6 @@ int main(int argc, const char* argv[]) {
 		if (frame.empty()) {
 			cout << "boþ frame\n";
 			break;
-		}
-		if (!cap.isOpened()) {
-			cout << "ERROR! Unable to open camera\n";
-			return -1;
 		}
 		frame.convertTo(frame, CV_64F, 1.0 / 255.0f);
 
@@ -100,17 +90,18 @@ int main(int argc, const char* argv[]) {
 
 				Mat lowpass1, lowpass2;
 
-				lowpass1 = (-high_b[1] * pyramid[i][0] + high_a[0] * pyramid[i][3] + high_a[1] * pyramid[i][2]) / high_b[0];
-				lowpass2 = (-low_b[1] * pyramid[i][1] + low_a[0] * pyramid[i][3] + low_a[1] * pyramid[i][2]) / low_b[0];
+				lowpass1 = (-high_b[1] * pyramid[i][0] + high_a[0] * pyramid[i][3] + high_a[0] * pyramid[i][2]) / high_b[0];
+				lowpass2 = (-low_b[1] * pyramid[i][1] + low_a[0] * pyramid[i][3] + low_a[0] * pyramid[i][2]) / low_b[0];
 				Mat m = alfa * (lowpass1 - lowpass2);
 
-				if (i == 2) {
+				if (i == level - 1) {
 
 					Mat m_;
 					Mat temp;
 
 					for (int l = 0; l < level - 1; l++) {
-						cv::pyrUp(m, m);
+						cv::pyrUp(m, temp);
+						m = temp;
 					}
 
 					imshow("b", frame + m);
@@ -142,13 +133,14 @@ int main(int argc, const char* argv[]) {
 
 tuple<double *, double *> butter(const double &fc, const double &fs) {
 
-	static double low_a[2] = {0.0}, low_b[2] = {0.0};
-	double th = (double)(2.0 * PI * fc / fs);
-	double g = (cos(th) / (1.0 + sin(th)));
-	low_a[0] = (double)(1.0 - g) / 2.0;
+	double* low_a = { new double[2]{0.0} };
+	double* low_b = { new double[2]{0.0} };
+	double th = 2.0 * PI * fc / fs;
+	double g = cos(th) / (1.0 + sin(th));
+	low_a[0] = (1.0 - g) / 2.0;
 	low_a[1] = (1.0 - g) / 2.0;
 	low_b[0] = 1.0;
-	low_b[1] = -1.0 * g;
+	low_b[1] = -g;
 
 	return { low_a,low_b };
 }
