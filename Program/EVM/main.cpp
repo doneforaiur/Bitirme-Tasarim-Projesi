@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <tuple>
 #include <opencv2/opencv.hpp>
@@ -12,9 +13,9 @@ using std::tuple;
 using std::vector;
 using cv::Mat;
 
-using namespace std::chrono;
+using namespace std;
 
-tuple<double* , double*> butter(const double&, const double&);
+tuple<double*, double*> butter(const double&, const double&);
 
 int main(int argc, const char* argv[]) {
 
@@ -22,37 +23,28 @@ int main(int argc, const char* argv[]) {
 	double Yfrekans;
 	int seviye;
 	int alfa;
-	string dosya_yolu;
+	
+	string default_args[] = { "0.5", "1.5", "4", "300" };
+	
+	string config;
 
-	int const default_argc = 5;
-	const char* default_args[] = { "0.5", "1.5", "5", "50", "face.mp4" };
-	if (argc == 1) {
+	fstream configs("config.txt");
 
-		argc = default_argc;
-		argv = default_args;
-
-		Afrekans = std::stod(argv[0]);
-		Yfrekans = std::stod(argv[1]);
-		seviye = std::stoi(argv[2]);
-		alfa = std::stoi(argv[3]);
-		dosya_yolu = argv[4];
-
+	cv::VideoCapture cap;
+	getline(configs, config);
+	if (config == "kamera") {
+		cap.open(0, 0);
+		cap.set(cv::CAP_PROP_FPS, 30);
 	}
 	else {
-		cout << argv[0];
-		Afrekans = std::stod(argv[1]);
-		Yfrekans = std::stod(argv[2]);
-		seviye = std::stoi(argv[3]);
-		alfa = std::stoi(argv[4]);
-		dosya_yolu = argv[5];
+		cap.open(config);
 	}
 
 
-	cv::VideoCapture cap("test4.mp4");
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
-	auto [low_a, low_b] = butter(0.5, fs);
-	auto [high_a, high_b] = butter(1.5, fs);
+	auto[low_a, low_b] = butter(0.5, fs);
+	auto[high_a, high_b] = butter(1.5, fs);
 
 	const int level = seviye;
 
@@ -60,13 +52,34 @@ int main(int argc, const char* argv[]) {
 	vector<vector<Mat>> pyramid;
 	pyramid.resize(level);
 
+
+	int frame_counter = 0;
+
 	Mat frame;
 	while (true) {
-		cap >> frame;
+
 		if (frame.empty()) {
-			cout << "boþ frame\n";
-			break;
+			return 0;
 		}
+
+		if (frame_counter > 9) {
+			frame_counter == 0;
+
+			int p = 0;
+			while (getline(configs, config)) {
+				default_args[p] = string(config);
+				p++;
+			}
+			Afrekans = stod(default_args[0]);
+			Yfrekans = stod(default_args[1]);
+			seviye = stoi(default_args[2]);
+			alfa = stoi(default_args[3]);
+		}
+
+		frame_counter++;
+
+		cap >> frame;
+		
 		frame.convertTo(frame, CV_64F, 1.0 / 255.0f);
 
 		//data->push_back(frame);
@@ -105,7 +118,6 @@ int main(int argc, const char* argv[]) {
 					}
 
 					imshow("b", frame + m);
-					imshow("a", frame);
 					cv::waitKey(1);
 				}
 
