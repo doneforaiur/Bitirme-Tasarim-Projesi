@@ -19,10 +19,10 @@ tuple<double*, double*> butter(const double&, const double&);
 
 int main(int argc, const char* argv[]) {
 
-	double Afrekans;
-	double Yfrekans;
-	int seviye;
-	int alfa;
+	double Afrekans =  1.5;
+	double Yfrekans =  0.5;
+	int seviye = 4;
+	float alfa = 100.0;
 	
 	string default_args[] = { "0.5", "1.5", "4", "300" };
 	
@@ -43,10 +43,10 @@ int main(int argc, const char* argv[]) {
 
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
-	auto[low_a, low_b] = butter(0.5, fs);
-	auto[high_a, high_b] = butter(1.5, fs);
+	auto[low_a, low_b] = butter(Afrekans, fs);
+	auto[high_a, high_b] = butter(Yfrekans, fs);
 
-	const int level = seviye;
+	int level = seviye;
 
 	vector<Mat>* data = new vector<Mat>;
 	vector<vector<Mat>> pyramid;
@@ -57,32 +57,37 @@ int main(int argc, const char* argv[]) {
 
 	Mat frame;
 	while (true) {
+		cap >> frame;
 
 		if (frame.empty()) {
+
 			return 0;
 		}
 
 		if (frame_counter > 9) {
-			frame_counter == 0;
+			frame_counter = 0;
 
 			int p = 0;
 			while (getline(configs, config)) {
+				cout << config;
 				default_args[p] = string(config);
 				p++;
 			}
-			Afrekans = stod(default_args[0]);
-			Yfrekans = stod(default_args[1]);
-			seviye = stoi(default_args[2]);
-			alfa = stoi(default_args[3]);
+			//Afrekans = stod(default_args[0]);
+			//Yfrekans = stod(default_args[1]);
+
+			//alfa = stof(default_args[2]);
+			//seviye = stoi(default_args[3]);
+
+			//auto[low_a, low_b] = butter(Afrekans, fs);
+			//auto[high_a, high_b] = butter(Yfrekans, fs);
+
+
 		}
 
 		frame_counter++;
 
-		cap >> frame;
-		
 		frame.convertTo(frame, CV_64F, 1.0 / 255.0f);
-
-		//data->push_back(frame);
 
 		Mat current = frame;
 
