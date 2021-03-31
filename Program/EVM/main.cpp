@@ -12,6 +12,7 @@ typedef std::valarray<Complex> CArray;
 
 #define PI 3.14159265358979
 
+
 using std::cout;
 using std::string;
 using std::tuple;
@@ -26,44 +27,29 @@ void fft(CArray &x);
 
 int main(int argc, const char* argv[]) {
 
-
-	//const Complex test[] = { 2.0, 2.0, 2.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
-	//CArray data1(test, 8);
-
-	//fft(data1);
-
-	//for (int i = 0; i < 8; ++i)
-	//{
-	//	cout << std::abs(data1[i]) << "\n";
-	//	cout << atan2(data1[i].imag(), data1[i].real()) << "\n";
-	//}
-
-
-
-
-
 	double Afrekans =  1.5;
 	double Yfrekans =  0.5;
 	int seviye = 4;
 	float alfa = 100.0;
 	
 	string default_args[] = { "0.5", "1.5", "4", "300" };
-	
 	string config;
-
-	//fstream configs("config.txt");
+	fstream configs("config.txt");
 
 	cv::VideoCapture cap;
-	//getline(configs, config);
-	//configs.close();
-	//if (config == "kamera") {
+	getline(configs, config);
+	configs.close();
+	if (config == "kamera") {
 		cap.open(0, 0);
 		cap.set(cv::CAP_PROP_FPS, 30);
-	//}
-	//else {
-	//	cap.open(config);
-	//}
+	}
+	else {
+		cap.open(config);
+	}
 
+
+	int frame_c = 292; //cap.get(cv::CAP_PROP_FRAME_COUNT);
+	Complex test[293] = { 0.0 };
 
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
@@ -78,14 +64,17 @@ int main(int argc, const char* argv[]) {
 
 
 	int frame_counter = 0;
+	int fourier_counter = 0;
 
 	Mat frame;
 	while (true) {
+
 		cap >> frame;
-		
-		//Mat rgbchannel[3];
-		//split(frame, rgbchannel);
-		//frame = rgbchannel[2];
+
+		Mat rgbchannel[3];
+		split(frame, rgbchannel);
+		//frame = (rgbchannel[0] + rgbchannel[1] + rgbchannel[2])/3.0;
+		frame = rgbchannel[1];
 
 		if (frame.empty()) {
 			return 0;
@@ -118,6 +107,8 @@ int main(int argc, const char* argv[]) {
 		}
 		frame_counter++;
 
+		
+
 		frame.convertTo(frame, CV_64F, 1.0 / 255.0f);
 		Mat current = frame;
 
@@ -146,9 +137,35 @@ int main(int argc, const char* argv[]) {
 						cv::pyrUp(m, temp);
 						m = temp;
 					}
+
+					
+					if (fourier_counter < 293) {
+						test[fourier_counter] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2));
+						cout << fixed  <<  mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
+						//cout << fourier_counter  << "," << mean(m)[1] << "\n";
+					}
+
+					//cv::Rect rect(frame.cols/2-5, frame.rows/2-5, 10, 10);
+					//cv::rectangle(frame, rect, cv::Scalar(0, 0, 0));
+
 					imshow("Çıkış", frame + m);
 					imshow("Maske", m);
 					cv::waitKey(1);
+
+					if (fourier_counter == 292) {
+						cout << "fft data";
+						CArray data1(test, 293);
+						fft(data1);
+						for (int i = 0; i < 294; i++)
+						{
+							//cout << i << "######\n";
+							cout <<i << " , " << abs(data1[i]) << "\n";
+							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n";
+						}
+
+						return 0;
+					}
+					fourier_counter++;
 				}
 
 				pyramid[i][0] = lowpass1;
@@ -187,49 +204,21 @@ tuple<double *, double *> butter(const double &fc, const double &fs) {
 	return { low_a,low_b };
 }
 
-
-void fft(CArray &x)
+void fft(CArray& x)
 {
-	unsigned int N = x.size(), k = N, n;
-	double thetaT = 3.14159265358979323846264338328L / N;
-	Complex phiT = Complex(cos(thetaT), -sin(thetaT)), T;
-	while (k > 1)
-	{
-		n = k;
-		k >>= 1;
-		phiT = phiT * phiT;
-		T = 1.0L;
-		for (unsigned int l = 0; l < k; l++)
-		{
-			for (unsigned int a = l; a < N; a += n)
-			{
-				unsigned int b = a + k;
-				Complex t = x[a] - x[b];
-				x[a] += x[b];
-				x[b] = t * T;
-			}
-			T *= phiT;
-		}
-	}
+	const size_t N = x.size();
+	if (N <= 1) return;
 
-	unsigned int m = (unsigned int)log2(N);
-	for (unsigned int a = 0; a < N; a++)
+	CArray cift = x[std::slice(0, N / 2, 2)];
+	CArray  tek = x[std::slice(1, N / 2, 2)];
+
+	fft(cift);
+	fft(tek);
+
+	for (size_t k = 0; k < N / 2; ++k)
 	{
-		unsigned int b = a;
-		b = (((b & 0xaaaaaaaa) >> 1) | ((b & 0x55555555) << 1));
-		b = (((b & 0xcccccccc) >> 2) | ((b & 0x33333333) << 2));
-		b = (((b & 0xf0f0f0f0) >> 4) | ((b & 0x0f0f0f0f) << 4));
-		b = (((b & 0xff00ff00) >> 8) | ((b & 0x00ff00ff) << 8));
-		b = ((b >> 16) | (b << 16)) >> (32 - m);
-		if (b > a)
-		{
-			Complex t = x[a];
-			x[a] = x[b];
-			x[b] = t;
-		}
+		Complex t = std::polar(1.0, -2 * PI * k / N) * tek[k];
+		x[k] = cift[k] + t;
+		x[k + N / 2] = cift[k] - t;
 	}
-	
-	//Complex f = 1.0 / sqrt(N);
-	//for (unsigned int i = 0; i < N; i++)
-	//	x[i] *= f;
 }
