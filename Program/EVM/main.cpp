@@ -27,29 +27,33 @@ void fft(CArray &x);
 
 int main(int argc, const char* argv[]) {
 
-	double Afrekans =  1.5;
-	double Yfrekans =  0.5;
+	double Afrekans = 1.5;
+	double Yfrekans = 0.5;
 	int seviye = 4;
 	float alfa = 100.0;
-	
+
 	string default_args[] = { "0.5", "1.5", "4", "300" };
 	string config;
 	fstream configs("config.txt");
+
+
+	int frame_c = 256; // default
+	CArray test(256);
 
 	cv::VideoCapture cap;
 	getline(configs, config);
 	configs.close();
 	if (config == "kamera") {
 		cap.open(0, 0);
-		cap.set(cv::CAP_PROP_FPS, 30);
+		cap.set(cv::CAP_PROP_FPS, 30); // kameranın fps'i ne olursa olsun
+		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT); // 30'a setliyor 
+		test.resize(frame_c);
 	}
 	else {
 		cap.open(config);
+		// frame_count video kamera için default 256
 	}
 
-
-	int frame_c = 292; //cap.get(cv::CAP_PROP_FRAME_COUNT);
-	Complex test[293] = { 0.0 };
 
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
@@ -84,7 +88,6 @@ int main(int argc, const char* argv[]) {
 			frame_counter = 0;
 
 			fstream configs("config.txt");
-			
 			getline(configs, config);
 
 			int p = 0;
@@ -102,14 +105,11 @@ int main(int argc, const char* argv[]) {
 
 			auto[low_a, low_b] = butter(Afrekans, fs);
 			auto[high_a, high_b] = butter(Yfrekans, fs);
-
-
 		}
 		frame_counter++;
 
-		
 
-		frame.convertTo(frame, CV_64F, 1.0 / 255.0f);
+		frame.convertTo(frame, CV_64F, 1.0 / 255.0);
 		Mat current = frame;
 
 		for (int i = 0; i < level; i++) {
@@ -138,30 +138,27 @@ int main(int argc, const char* argv[]) {
 						m = temp;
 					}
 
-					
-					if (fourier_counter < 293) {
-						test[fourier_counter] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2));
-						cout << fixed  <<  mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
+					if (fourier_counter < 256) {
+						test[fourier_counter] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2)); 
+						//cout << fixed << mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
 						//cout << fourier_counter  << "," << mean(m)[1] << "\n";
 					}
 
-					//cv::Rect rect(frame.cols/2-5, frame.rows/2-5, 10, 10);
-					//cv::rectangle(frame, rect, cv::Scalar(0, 0, 0));
+					//imshow("Çıkış", frame + m);
+					//imshow("Maske", m);
+					//cv::waitKey(1);
 
-					imshow("Çıkış", frame + m);
-					imshow("Maske", m);
-					cv::waitKey(1);
-
-					if (fourier_counter == 292) {
-						cout << "fft data";
-						CArray data1(test, 293);
-						fft(data1);
-						for (int i = 0; i < 294; i++)
+					vector<double> data;
+					if (fourier_counter == 257) {
+						fft(test);
+						for (int i = 0; i < test.size()/2; i++)
 						{
-							//cout << i << "######\n";
-							cout <<i << " , " << abs(data1[i]) << "\n";
-							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n";
+							data.push_back(pow(abs(test[i]),2));
+							//cout << i << " , " << abs(test[i]) << "\n"; // GÜÇ
+							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n"; // FAZ
 						}
+						int maxElementIndex = std::max_element(data.begin()+5, data.begin()+15) - data.begin();
+						cout << 30.0 / 256.0 * (maxElementIndex+1) * 60.0 << endl;
 
 						return 0;
 					}
