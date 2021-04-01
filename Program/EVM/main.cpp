@@ -46,16 +46,19 @@ int main(int argc, const char* argv[]) {
 	if (config == "kamera") {
 		cap.open(0, 0);
 		cap.set(cv::CAP_PROP_FPS, 30); // kameranın fps'i ne olursa olsun
-		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT); // 30'a setliyor 
-		test.resize(frame_c);
 	}
 	else {
 		cap.open(config);
-		// frame_count video kamera için default 256
+		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT); // 30'a setliyor 
+		test = CArray(256);
+		cout << "Toplam kare sayısı; " << frame_c << endl;
+
 	}
-
-
+	
 	double fs = cap.get(cv::CAP_PROP_FPS);
+
+	cout << "Video FPS'i; " << fs << endl;
+	cout << "Kare sayısı; " << frame_c << endl;
 
 	auto[low_a, low_b] = butter(Afrekans, fs);
 	auto[high_a, high_b] = butter(Yfrekans, fs);
@@ -72,7 +75,6 @@ int main(int argc, const char* argv[]) {
 
 	Mat frame;
 	while (true) {
-
 		cap >> frame;
 
 		Mat rgbchannel[3];
@@ -138,31 +140,37 @@ int main(int argc, const char* argv[]) {
 						m = temp;
 					}
 
-					if (fourier_counter < 256) {
+					if (fourier_counter < 256 ){
 						test[fourier_counter] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2)); 
 						//cout << fixed << mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
 						//cout << fourier_counter  << "," << mean(m)[1] << "\n";
+
 					}
 
-					//imshow("Çıkış", frame + m);
-					//imshow("Maske", m);
-					//cv::waitKey(1);
+					imshow("Çıkış", frame + m);
+					imshow("Maske", m);
+					cv::waitKey(1);
 
-					vector<double> data;
+					fourier_counter++;
+
+					cout << "%" <<fourier_counter / 256.0 << endl;
 					if (fourier_counter == 257) {
+
+						vector<double> data;
+
 						fft(test);
 						for (int i = 0; i < test.size()/2; i++)
 						{
-							data.push_back(pow(abs(test[i]),2));
-							//cout << i << " , " << abs(test[i]) << "\n"; // GÜÇ
+							data.push_back(abs(test[i]));
+							cout << fixed <<i << " , " << abs(test[i])/255.0 << "\n"; // GÜÇ
 							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n"; // FAZ
 						}
 						int maxElementIndex = std::max_element(data.begin()+5, data.begin()+15) - data.begin();
-						cout << 30.0 / 256.0 * (maxElementIndex+1) * 60.0 << endl;
+						cout << fs / 256.0 * (maxElementIndex+1) * 60.0 << endl;
 
 						return 0;
 					}
-					fourier_counter++;
+
 				}
 
 				pyramid[i][0] = lowpass1;
