@@ -147,28 +147,54 @@ int main(int argc, const char* argv[]) {
 
 					}
 
+					if (fourier_counter > 256) {
+						test.shift(1);
+						test[255] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2)); 
+						//cout << fixed << mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
+						//cout << fourier_counter  << "," << mean(m)[1] << "\n";
+
+					}
+
+
 					imshow("Çıkış", frame + m);
 					imshow("Maske", m);
 					cv::waitKey(1);
 
 					fourier_counter++;
 
-					cout << "%" <<fourier_counter / 256.0 << endl;
-					if (fourier_counter == 257) {
+					cout << "%" << 100.0 * fourier_counter / 256.0 << endl;
+					if (fourier_counter > 10) {
 
 						vector<double> data;
 
-						fft(test);
-						for (int i = 0; i < test.size()/2; i++)
-						{
-							data.push_back(abs(test[i]));
-							cout << fixed <<i << " , " << abs(test[i])/255.0 << "\n"; // GÜÇ
-							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n"; // FAZ
-						}
-						int maxElementIndex = std::max_element(data.begin()+5, data.begin()+15) - data.begin();
-						cout << fs / 256.0 * (maxElementIndex+1) * 60.0 << endl;
+						CArray test_temp(256);
+						test_temp = test;
+						fft(test_temp);
 
-						return 0;
+						ofstream myfile;
+						myfile.open("fourier.txt");
+
+						for (int i = 0; i < test_temp.size()/2; i++)
+						{
+							data.push_back(pow(abs(test_temp[i])/256.0, 2));
+							//cout << fixed <<i << " , " << abs(test[i])/255.0 << "\n"; // GÜÇ
+							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n"; // FAZ
+							
+							myfile << fixed <<abs(test_temp[i]) << endl;
+						
+						}
+						myfile.close();
+
+						int Abin = floor(Afrekans / (fs / 256.0));
+						int Ybin = ceil(Yfrekans / (fs / 256.0));
+						int maxElementIndex = std::max_element(data.begin()+Abin, data.begin()+Ybin) - data.begin();
+						
+					
+						float Anabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) - (60.0 * fs / 256.0) / 4;
+						float Ynabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) + (60.0 * fs / 256.0) / 4;
+
+						cout << setprecision(2) << Anabiz << "-" << Ynabiz << endl;
+
 					}
 
 				}
