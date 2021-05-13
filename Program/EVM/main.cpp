@@ -5,13 +5,12 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 #include <valarray>
+#include "opencv2/highgui.hpp"
 
 typedef std::complex<double> Complex;
 typedef std::valarray<Complex> CArray;
 
-
 #define PI 3.14159265358979
-
 
 using std::cout;
 using std::string;
@@ -32,7 +31,7 @@ int main(int argc, const char* argv[]) {
 	int seviye = 4;
 	float alfa = 100.0;
 
-	string default_args[] = { "0.5", "1.5", "4", "300" };
+	string default_args[] = { "0.5", "1.5", "6", "300" };
 	string config;
 	fstream configs("config.txt");
 
@@ -48,12 +47,19 @@ int main(int argc, const char* argv[]) {
 		cap.set(cv::CAP_PROP_FPS, 30); // kameranın fps'i ne olursa olsun
 	}
 	else {
+		cout << config << endl;
+
 		cap.open(config);
+		
+		cout << cap.isOpened() << endl;
+
 		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT); // 30'a setliyor 
 		test = CArray(256);
 		cout << "Toplam kare sayısı; " << frame_c << endl;
 
 	}
+
+
 	
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
@@ -74,9 +80,15 @@ int main(int argc, const char* argv[]) {
 	int fourier_counter = 0;
 
 	Mat frame;
+
+	cap >> frame;
+
+	cv::Size s = frame.size();
+
+//cv::VideoWriter oVideoWriter("MyVideo.mp4", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), fs, s, true);
+
 	while (true) {
 		cap >> frame;
-
 		Mat rgbchannel[3];
 		split(frame, rgbchannel);
 		//frame = (rgbchannel[0] + rgbchannel[1] + rgbchannel[2])/3.0;
@@ -114,6 +126,8 @@ int main(int argc, const char* argv[]) {
 		frame.convertTo(frame, CV_64F, 1.0 / 255.0);
 		Mat current = frame;
 
+		Mat laplace;
+
 		for (int i = 0; i < level; i++) {
 
 			Mat down, up;
@@ -132,6 +146,12 @@ int main(int argc, const char* argv[]) {
 
 				Mat m = alfa * (lowpass2 - lowpass1);
 
+				if (i == level - 2) {
+					//imshow("Laplace", m);
+					laplace = m;
+				}
+
+
 				if (i == level - 1) {
 					Mat m_;
 					Mat temp;
@@ -140,31 +160,39 @@ int main(int argc, const char* argv[]) {
 						m = temp;
 					}
 
-					if (fourier_counter < 256 ){
-						test[fourier_counter] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2)); 
-						//cout << fixed << mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
-						//cout << fourier_counter  << "," << mean(m)[1] << "\n";
+					for (int l = 0; l < level - 2; l++) {
+						cv::pyrUp(laplace, temp);
+						laplace = temp;
+					}
 
+
+					Mat laplace_temp;
+					Mat binaryMat;
+					laplace_temp.convertTo(temp, CV_8U, 255, 0);
+					laplace_temp = temp;
+
+					m.copyTo(binaryMat, laplace_temp);
+
+					
+					imshow("Çıkış", frame + binaryMat);
+					imshow("Maske",  frame + laplace);
+					imshow("Laplace", binaryMat);
+					cv::waitKey(1);
+					
+					m = binaryMat;
+					if (fourier_counter < 256) {
+						test[fourier_counter] = mean(m)[0];
 					}
 
 					if (fourier_counter > 256) {
 						test.shift(1);
-						test[255] = mean(m)[0];//(m.at<double>(m.rows/2, m.cols/2)); 
-						//cout << fixed << mean(m)[0] << "\n";//(m.at<double>(m.rows/2, m.cols/2)) << "\n";
-						//cout << fourier_counter  << "," << mean(m)[1] << "\n";
-
+						test[255] = mean(m)[0];
 					}
-
-
-					imshow("Çıkış", frame + m);
-					imshow("Maske", m);
-					cv::waitKey(1);
 
 					fourier_counter++;
 
-					cout << "%" << 100.0 * fourier_counter / 256.0 << endl;
 					if (fourier_counter > 10) {
-
+						
 						vector<double> data;
 
 						CArray test_temp(256);
@@ -176,10 +204,9 @@ int main(int argc, const char* argv[]) {
 
 						for (int i = 0; i < test_temp.size()/2; i++)
 						{
-							data.push_back(pow(abs(test_temp[i])/256.0, 2));
-							//cout << fixed <<i << " , " << abs(test[i])/255.0 << "\n"; // GÜÇ
-							//cout << i << ","<< atan2(data1[i].imag(), data1[i].real()) << "\n"; // FAZ
-							
+							data.push_back(pow(abs(test_temp[i])/256.0, 2)); // ## GÜÇ^2
+							// abs(test[i])/255.0							    ## GÜÇ
+							// atan2(data1[i].imag(), data1[i].real())			## FAZ
 							myfile << fixed <<abs(test_temp[i]) << endl;
 						
 						}
@@ -188,15 +215,14 @@ int main(int argc, const char* argv[]) {
 						int Abin = floor(Afrekans / (fs / 256.0));
 						int Ybin = ceil(Yfrekans / (fs / 256.0));
 						int maxElementIndex = std::max_element(data.begin()+Abin, data.begin()+Ybin) - data.begin();
-						
 					
 						float Anabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) - (60.0 * fs / 256.0) / 4;
 						float Ynabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) + (60.0 * fs / 256.0) / 4;
 
-						cout << setprecision(2) << Anabiz << "-" << Ynabiz << endl;
-
+						ofstream nabiz;
+						nabiz.open("nabız.txt");
+						nabiz << setprecision(2) << Anabiz << "-" << Ynabiz << endl;
 					}
-
 				}
 
 				pyramid[i][0] = lowpass1;
@@ -218,7 +244,10 @@ int main(int argc, const char* argv[]) {
 			current = down;
 
 		}
+
 	}
+	//oVideoWriter.release();
+
 }
 
 tuple<double *, double *> butter(const double &fc, const double &fs) {
@@ -253,3 +282,4 @@ void fft(CArray& x)
 		x[k + N / 2] = cift[k] - t;
 	}
 }
+
