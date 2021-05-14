@@ -26,37 +26,46 @@ void fft(CArray &x);
 
 int main(int argc, const char* argv[]) {
 
-	double Afrekans = 1.5;
-	double Yfrekans = 0.5;
-	int seviye = 4;
-	float alfa = 100.0;
-
-	string default_args[] = { "0.5", "1.5", "6", "300" };
-	string config;
+	string default_args[] = {"kamera", "0.5", "1.5", "300", "2", "true" };
+	string dosya_yolu, config;
+	
 	fstream configs("config.txt");
 
+	getline(configs, dosya_yolu); // dosya yolunu geçmek için
+	cout << dosya_yolu << endl;
+	int p = 0;
+	while (getline(configs, config)) {
+		default_args[p] = string(config);
+		p++;
+	}
 
-	int frame_c = 256; // default
+	configs.close();
+	double Afrekans = stod(default_args[0]);
+	double Yfrekans = stod(default_args[1]);
+
+	float alfa = stof(default_args[2]);
+	int seviye = stoi(default_args[3]);
+
+	bool gelismis = (default_args[4] == "true" ? true : false);
+
+
+	int frame_c = 256; // ftt için default
 	CArray test(256);
 
 	cv::VideoCapture cap;
-	getline(configs, config);
+
 	configs.close();
-	if (config == "kamera") {
+	if (dosya_yolu == "kamera") {
 		cap.open(0, 0);
 		cap.set(cv::CAP_PROP_FPS, 30); // kameranın fps'i ne olursa olsun
 	}
 	else {
 		cout << config << endl;
-
-		cap.open(config);
-		
+		cap.open(dosya_yolu);
 		cout << cap.isOpened() << endl;
-
 		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT); // 30'a setliyor 
 		test = CArray(256);
 		cout << "Toplam kare sayısı; " << frame_c << endl;
-
 	}
 
 
@@ -102,9 +111,10 @@ int main(int argc, const char* argv[]) {
 			frame_counter = 0;
 
 			fstream configs("config.txt");
-			getline(configs, config);
+			getline(configs, dosya_yolu); // dosya yolunu geçmek için
 
 			int p = 0;
+			string config;
 			while (getline(configs, config)) {
 				default_args[p] = string(config);
 				p++;
@@ -116,6 +126,9 @@ int main(int argc, const char* argv[]) {
 
 			alfa = stof(default_args[2]);
 			seviye = stoi(default_args[3]);
+
+			gelismis = (default_args[4] == "true" ? true : false);
+
 
 			auto[low_a, low_b] = butter(Afrekans, fs);
 			auto[high_a, high_b] = butter(Yfrekans, fs);
@@ -146,40 +159,41 @@ int main(int argc, const char* argv[]) {
 
 				Mat m = alfa * (lowpass2 - lowpass1);
 
-				if (i == level - 2) {
+			
+				if ((i == level - 2)  && (gelismis==true)) {
 					//imshow("Laplace", m);
+					cout << "aaa";
+					Mat temp;
 					laplace = m;
+					for (int l = 0; l < level - 2; l++) {
+						cv::pyrUp(laplace, temp);
+						laplace = temp;
+					}
 				}
 
 
 				if (i == level - 1) {
-					Mat m_;
-					Mat temp;
+					Mat m_, temp;
+					
 					for (int l = 0; l < level - 1; l++) {
 						cv::pyrUp(m, temp);
 						m = temp;
 					}
 
-					for (int l = 0; l < level - 2; l++) {
-						cv::pyrUp(laplace, temp);
-						laplace = temp;
-					}
-
 
 					Mat laplace_temp;
 					Mat binaryMat;
-					laplace_temp.convertTo(temp, CV_8U, 255, 0);
-					laplace_temp = temp;
-
-					m.copyTo(binaryMat, laplace_temp);
-
 					
-					imshow("Çıkış", frame + binaryMat);
-					imshow("Maske",  frame + laplace);
-					imshow("Laplace", binaryMat);
+					if (gelismis == true) {
+						laplace.convertTo(laplace_temp, CV_8U, 255, 0);
+						m.copyTo(binaryMat, laplace_temp);
+						m = binaryMat;
+					}
+					imshow("Çıkış",  frame + m);
+					imshow("Maske",  m);
 					cv::waitKey(1);
 					
-					m = binaryMat;
+					m = binaryMat; 
 					if (fourier_counter < 256) {
 						test[fourier_counter] = mean(m)[0];
 					}
