@@ -26,7 +26,7 @@ void fft(CArray &x);
 
 int main(int argc, const char* argv[]) {
 
-	string default_args[] = {"kamera", "0.5", "1.5", "300", "2", "true" };
+	string default_args[] = {"kamera", "0.5", "1.5", "300", "2", "false", "-1" };
 	string dosya_yolu, config;
 	
 	fstream configs("config.txt");
@@ -47,6 +47,9 @@ int main(int argc, const char* argv[]) {
 	int seviye = stoi(default_args[3]);
 
 	bool gelismis = (default_args[4] == "true" ? true : false);
+	int  performans = stoi(default_args[5]);
+	
+	cout << Afrekans << " " <<Yfrekans << endl;
 
 
 	int frame_c = 256; // ftt için default
@@ -57,23 +60,19 @@ int main(int argc, const char* argv[]) {
 	configs.close();
 	if (dosya_yolu == "kamera") {
 		cap.open(0, 0);
-		cap.set(cv::CAP_PROP_FPS, 30); // kameranın fps'i ne olursa olsun
-	}
+		cap.set(cv::CAP_PROP_FPS, 10); // kameranın fps'i ne olursa olsun
+	}								   // 30'a setliyor
 	else {
 		cout << config << endl;
 		cap.open(dosya_yolu);
 		cout << cap.isOpened() << endl;
-		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT); // 30'a setliyor 
+		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT);  
 		test = CArray(256);
-		cout << "Toplam kare sayısı; " << frame_c << endl;
 	}
 
 
 	
 	double fs = cap.get(cv::CAP_PROP_FPS);
-
-	cout << "Video FPS'i; " << fs << endl;
-	cout << "Kare sayısı; " << frame_c << endl;
 
 	auto[low_a, low_b] = butter(Afrekans, fs);
 	auto[high_a, high_b] = butter(Yfrekans, fs);
@@ -94,47 +93,19 @@ int main(int argc, const char* argv[]) {
 
 	cv::Size s = frame.size();
 
-//cv::VideoWriter oVideoWriter("MyVideo.mp4", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), fs, s, true);
-
 	while (true) {
 		cap >> frame;
-		Mat rgbchannel[3];
-		split(frame, rgbchannel);
-		//frame = (rgbchannel[0] + rgbchannel[1] + rgbchannel[2])/3.0;
-		frame = rgbchannel[1];
+		if (performans > -1) {
+			Mat rgbchannel[3];
+			split(frame, rgbchannel);
+			frame = rgbchannel[performans];
+		}
 
 		if (frame.empty()) {
 			return 0;
 		}
 
-		if (frame_counter > 9) {
-			frame_counter = 0;
-
-			fstream configs("config.txt");
-			getline(configs, dosya_yolu); // dosya yolunu geçmek için
-
-			int p = 0;
-			string config;
-			while (getline(configs, config)) {
-				default_args[p] = string(config);
-				p++;
-			}
-
-			configs.close();
-			Afrekans = stod(default_args[0]);
-			Yfrekans = stod(default_args[1]);
-
-			alfa = stof(default_args[2]);
-			seviye = stoi(default_args[3]);
-
-			gelismis = (default_args[4] == "true" ? true : false);
-
-
-			auto[low_a, low_b] = butter(Afrekans, fs);
-			auto[high_a, high_b] = butter(Yfrekans, fs);
-		}
 		frame_counter++;
-
 
 		frame.convertTo(frame, CV_64F, 1.0 / 255.0);
 		Mat current = frame;
@@ -161,8 +132,6 @@ int main(int argc, const char* argv[]) {
 
 			
 				if ((i == level - 2)  && (gelismis==true)) {
-					//imshow("Laplace", m);
-					cout << "aaa";
 					Mat temp;
 					laplace = m;
 					for (int l = 0; l < level - 2; l++) {
@@ -189,17 +158,16 @@ int main(int argc, const char* argv[]) {
 						m.copyTo(binaryMat, laplace_temp);
 						m = binaryMat;
 					}
+					imshow("Orijinal", frame);
 					imshow("Çıkış",  frame + m);
-					imshow("Maske",  m);
 					cv::waitKey(1);
-					
-					m = binaryMat; 
+					 
 					if (fourier_counter < 256) {
 						test[fourier_counter] = mean(m)[0];
 					}
 
 					if (fourier_counter > 256) {
-						test.shift(1);
+						test = test.shift(1);
 						test[255] = mean(m)[0];
 					}
 
@@ -213,18 +181,13 @@ int main(int argc, const char* argv[]) {
 						test_temp = test;
 						fft(test_temp);
 
-						ofstream myfile;
-						myfile.open("fourier.txt");
-
 						for (int i = 0; i < test_temp.size()/2; i++)
 						{
 							data.push_back(pow(abs(test_temp[i])/256.0, 2)); // ## GÜÇ^2
 							// abs(test[i])/255.0							    ## GÜÇ
 							// atan2(data1[i].imag(), data1[i].real())			## FAZ
-							myfile << fixed <<abs(test_temp[i]) << endl;
 						
 						}
-						myfile.close();
 
 						int Abin = floor(Afrekans / (fs / 256.0));
 						int Ybin = ceil(Yfrekans / (fs / 256.0));
@@ -232,10 +195,11 @@ int main(int argc, const char* argv[]) {
 					
 						float Anabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) - (60.0 * fs / 256.0) / 4;
 						float Ynabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) + (60.0 * fs / 256.0) / 4;
-
+						cout << Anabiz << " " << Ynabiz << endl;
 						ofstream nabiz;
 						nabiz.open("nabız.txt");
 						nabiz << setprecision(2) << Anabiz << "-" << Ynabiz << endl;
+						nabiz.close();
 					}
 				}
 
@@ -258,10 +222,7 @@ int main(int argc, const char* argv[]) {
 			current = down;
 
 		}
-
 	}
-	//oVideoWriter.release();
-
 }
 
 tuple<double *, double *> butter(const double &fc, const double &fs) {
