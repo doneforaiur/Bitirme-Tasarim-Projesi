@@ -32,7 +32,6 @@ int main(int argc, const char* argv[]) {
 	fstream configs("config.txt");
 
 	getline(configs, dosya_yolu); // dosya yolunu geçmek için
-	cout << dosya_yolu << endl;
 	int p = 0;
 	while (getline(configs, config)) {
 		default_args[p] = string(config);
@@ -49,9 +48,6 @@ int main(int argc, const char* argv[]) {
 	bool gelismis = (default_args[4] == "true" ? true : false);
 	int  performans = stoi(default_args[5]);
 	
-	cout << Afrekans << " " <<Yfrekans << endl;
-
-
 	int frame_c = 256; // ftt için default
 	CArray test(256);
 
@@ -60,18 +56,14 @@ int main(int argc, const char* argv[]) {
 	configs.close();
 	if (dosya_yolu == "kamera") {
 		cap.open(0, 0);
-		cap.set(cv::CAP_PROP_FPS, 10); // kameranın fps'i ne olursa olsun
+		cap.set(cv::CAP_PROP_FPS, 30); // kameranın fps'i ne olursa olsun
 	}								   // 30'a setliyor
 	else {
-		cout << config << endl;
 		cap.open(dosya_yolu);
-		cout << cap.isOpened() << endl;
 		frame_c = cap.get(cv::CAP_PROP_FRAME_COUNT);  
 		test = CArray(256);
 	}
 
-
-	
 	double fs = cap.get(cv::CAP_PROP_FPS);
 
 	auto[low_a, low_b] = butter(Afrekans, fs);
@@ -128,7 +120,7 @@ int main(int argc, const char* argv[]) {
 				lowpass1 = (-high_b[1] * pyramid[i][0] + high_a[0] * pyramid[i][3] + high_a[0] * pyramid[i][2]) / high_b[0];
 				lowpass2 = (-low_b[1] * pyramid[i][1] + low_a[0] * pyramid[i][3] + low_a[0] * pyramid[i][2]) / low_b[0];
 
-				Mat m = alfa * (lowpass2 - lowpass1);
+				Mat m = alfa * (lowpass1 - lowpass2);
 
 			
 				if ((i == level - 2)  && (gelismis==true)) {
@@ -170,6 +162,11 @@ int main(int argc, const char* argv[]) {
 						test = test.shift(1);
 						test[255] = mean(m)[0];
 					}
+					ofstream data1;
+					data1.open("data.txt");
+					for (int i = 0; i < test.size(); i++) {
+						data1 << test[i].real() << endl;
+					}
 
 					fourier_counter++;
 
@@ -183,10 +180,16 @@ int main(int argc, const char* argv[]) {
 
 						for (int i = 0; i < test_temp.size()/2; i++)
 						{
-							data.push_back(pow(abs(test_temp[i])/256.0, 2)); // ## GÜÇ^2
+							data.push_back(abs(test_temp[i])); // ## GÜÇ^2
 							// abs(test[i])/255.0							    ## GÜÇ
-							// atan2(data1[i].imag(), data1[i].real())			## FAZ
-						
+							// atan2(data1[i].imag(), data1[i].real())			## FAZ						
+						}
+
+						ofstream fourier;
+						fourier.open("fourier.txt");
+						for (int i = 0; i < test_temp.size() / 2; i++) {
+							fourier << abs(test_temp[i]) << endl;
+
 						}
 
 						int Abin = floor(Afrekans / (fs / 256.0));
@@ -195,10 +198,10 @@ int main(int argc, const char* argv[]) {
 					
 						float Anabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) - (60.0 * fs / 256.0) / 4;
 						float Ynabiz = (fs / 256.0 * (maxElementIndex + 1) * 60.0) + (60.0 * fs / 256.0) / 4;
-						cout << Anabiz << " " << Ynabiz << endl;
+						cout  << fixed << setprecision(1) << Anabiz << " " << Ynabiz << endl;
 						ofstream nabiz;
 						nabiz.open("nabız.txt");
-						nabiz << setprecision(2) << Anabiz << "-" << Ynabiz << endl;
+						nabiz << fixed << setprecision(1) << Anabiz << "-" << Ynabiz << endl;
 						nabiz.close();
 					}
 				}
