@@ -1,37 +1,24 @@
-## Welcome to GitHub Pages
+# Bitirme-Tasarim-Projesi
+Euler renk ve hareket yöntemlerini kullanarak geliştirdiğimiz videodan nabız algılama projemizin kaynak kodlarını ve kurulum için gerekli dosyaları bulabilirsiniz. [PDF](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Tez/tez.pdf), [program](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Program/EVM/main.cpp), [arayüz](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Program/Aray%C3%BCz/EVM.cs).
 
-You can use the [editor on GitHub](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/edit/main/docs/index.md) to maintain and preview the content for your website in Markdown files.
+## Kurulum
+**DLL.zip** ve **EVM.zip** dosyalarını aynı klasöre çıkartınız. Linux kurulumu için **EVM.cpp** dosyasının derlenmesi ve OpenCV'nin kurulması gerekmektedir. Kullanıcı arayüzü Windows için geliştirilmiştir.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## Çalıştırma
+Sağlanan **Arayüz.exe**'yi kullanarak kullanıcı arayüzünü başlatabilir veya komut satırından EVM.exe'yi direkt çalıştırabilirsiniz. Komut satırından **EVM.exe**'yi çalıştırmak istiyorsanız, aynı dosya içerisinde *config.txt* isimli dosya oluşturmanız gerekmektedir. Dosyanın içeriği;
 
-### Markdown
+| Parametre     | Tür                 | Örnek     |
+| ------------- |---------------------| ---------:|
+| dosya_yolu    | `string`            | video.mp4 |
+| alçak_frekans | `float < 1.0`       | 0.5       |
+| yüksek_frekans| `float > 2.0`       | 2.5       |
+| ala           | `float > 0.0`       | 75.5      |
+| piramit_seviye| `int   > 1`         | 2         |
+| gelişmiş      | `{true, false}`     | false     |
+| kanal         | `{-1, 0, 1, 2}`     | 0         |
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+### "Gelişmiş" parametresi
+Laplace piramit basamaklarını kullanarak hareketten kaynaklı renk değişimlerini en aza indirgemek içindir. Çıkış görüntüsünde bozulmalara yol açsa da bu beklenilen bir durumdur. Fourier dönüşümünde kullanılacak sinyaldeki gürültüyü azaltmak amaçlı kullanılır.
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+### "Kanal" parametresi
+Renk kanalı sayısından feragat ederek performans artışı elde etmek içindir. `-1` ile bütün renk kanalları hesaplamalara dahil edilir. `0` mavi, `1` yeşil, `2` ise kırmızı kanal üstünde hesap yapılacağını belirtir. *Görüntü çıkışını siyah/beyaz yapar.*
