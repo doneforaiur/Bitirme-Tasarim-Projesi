@@ -1,5 +1,5 @@
 # Bitirme-Tasarim-Projesi
-Euler renk ve hareket yöntemlerini kullanarak geliştirdiğimiz videodan nabız algılama projemizin kaynak kodlarını ve kurulum için gerekli dosyaları bulabilirsiniz. [PDF](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Tez/tez.pdf), [program](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Program/EVM/main.cpp), [arayüz](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Program/Aray%C3%BCz/EVM.cs).
+Euler renk ve hareket yöntemlerini kullanarak geliştirdiğimiz videodan nabız algılama projemizin kaynak kodlarını ve kurulum için gerekli dosyaları bulabilirsiniz. [PDF](https://doneforaiur.github.io/Bitirme-Tasarim-Projesi/tez.pdf), [program](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Program/EVM/main.cpp), [arayüz](https://github.com/doneforaiur/Bitirme-Tasarim-Projesi/blob/main/Program/Aray%C3%BCz/EVM.cs).
 
 ## Kurulum
 **DLL.zip** ve **EVM.zip** dosyalarını aynı klasöre çıkartınız. Linux kurulumu için **EVM.cpp** dosyasının derlenmesi ve OpenCV'nin kurulması gerekmektedir. Kullanıcı arayüzü Windows için geliştirilmiştir.
