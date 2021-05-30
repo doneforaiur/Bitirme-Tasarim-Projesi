@@ -8,7 +8,7 @@ Euler renk ve hareket yöntemlerini kullanarak geliştirdiğimiz videodan nabız
 Sağlanan **Arayüz.exe**'yi kullanarak kullanıcı arayüzünü başlatabilir veya komut satırından EVM.exe'yi direkt çalıştırabilirsiniz. Komut satırından **EVM.exe**'yi çalıştırmak istiyorsanız, aynı dosya içerisinde *config.txt* isimli dosya oluşturmanız gerekmektedir. Dosyanın içeriği;
 
 | Parametre     | Tür                 | Örnek     |
-| ------------- |---------------------| ---------:|
+| ------------- |---------------------| ----------|
 | dosya_yolu    | `string`            | video.mp4 |
 | alçak_frekans | `float < 1.0`       | 0.5       |
 | yüksek_frekans| `float > 2.0`       | 2.5       |
