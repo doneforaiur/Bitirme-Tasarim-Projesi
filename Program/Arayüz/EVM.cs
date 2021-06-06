@@ -15,11 +15,11 @@ namespace InterfaceProject
     {
         System.Windows.Forms.Timer aTimer;
         System.Diagnostics.Process process = new System.Diagnostics.Process();
-        string line, output;
+        string line;
         string path;
         string loc = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "/config.txt";
         System.IO.StreamWriter sw;
-        //    string text1, text2, text3, text4, yer;
+
         public Form1()
         {
             InitializeComponent();
