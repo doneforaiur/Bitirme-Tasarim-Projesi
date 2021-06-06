@@ -48,7 +48,6 @@ namespace InterfaceProject
 
             string fLoc = "";
             fLoc = System.IO.Path.GetDirectoryName(Application.ExecutablePath);
-            //   Console.WriteLine(fLoc);
             fLoc = fLoc + "/EVM.exe";
             fLoc.Replace("/", "//");
 
