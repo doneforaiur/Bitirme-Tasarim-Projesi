@@ -18,7 +18,6 @@ namespace InterfaceProject
         string line, output;
         string path;
         string loc = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "/config.txt";
-        string loc2 = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "/nabız.txt";
         System.IO.StreamWriter sw;
         //    string text1, text2, text3, text4, yer;
         public Form1()
